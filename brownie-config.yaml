@@ -20,4 +20,5 @@ networks:
     keyhash: '0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4'
     fee: 1.e+17
     uniswap_router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+    uniswap_factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
 

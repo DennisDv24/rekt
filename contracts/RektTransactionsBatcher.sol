@@ -53,7 +53,7 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 
 	function _initializeNewBatch(uint256 amount) private {
 		_saleOfBatchInProcess = true;
-		_sellSmallAmountForTheLinkFee(amount);
+		//_sellSmallAmountForTheLinkFee(amount);
 		requestRandomness(_keyhash, _fee);
 	}
 	
