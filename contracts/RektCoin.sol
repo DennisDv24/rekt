@@ -9,8 +9,11 @@ contract RektCoin is ERC20, Ownable {
 	address private _poolAddress;
 	address private _transactionBatcher;
 
-	constructor(uint256 initialSupply) ERC20("RektCoin", "REKT") {
-		_mint(msg.sender, initialSupply);
+	uint256 private _initialSupply;
+
+	constructor(uint256 initialSupply_) ERC20("RektCoin", "REKT") {
+		_initialSupply = initialSupply_;
+		_mint(msg.sender, initialSupply_);
 	}
 
 	function _transfer(
@@ -45,5 +48,9 @@ contract RektCoin is ERC20, Ownable {
 	}
 	function transactionBatcher() public returns (address) {
 		return _transactionBatcher;
+	}
+
+	function totalSupply() public view override returns (uint256) {
+		return _initialSupply - balanceOf(address(0xdead)) - balanceOf(address(0));
 	}
 }
