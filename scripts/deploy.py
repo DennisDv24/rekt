@@ -55,6 +55,7 @@ def create_liq_pool():
         {'from': acc, 'value': eth_to_add_to_the_pool}
     )
 
+# NOTE this should be implemented in the contract
 def fund_batcher_with_link():
     acc = get_account()
     # NOTE better use interfaces
@@ -85,7 +86,21 @@ def set_token_pool():
 
     token.setPoolAddress(pool_address, {'from': acc})
 
+
+def approve_spending_on_batcher():
+    acc = get_account()
+    amount_to_approve = Web3.toWei(10000, 'ether')
+
+    token = RektCoin[-1]
+    token.approve(
+        RektTransactionBatcher[-1].address,
+        amount_to_approve,
+        {'from': acc}
+    )
+# NOTE I should try to do the allowances approvement in the contract while selling
+#      if its needed
 def sell():
+    approve_spending_on_batcher()
     amout_to_sell = amount_to_keep;
     acc = get_account()
     batcher = RektTransactionBatcher[-1]
@@ -112,3 +127,4 @@ def do_whole_rekt_swap_test():
 
 def main():
     do_whole_rekt_swap_test()
+

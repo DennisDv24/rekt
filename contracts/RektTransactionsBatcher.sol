@@ -69,6 +69,7 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 	}
 
 	function _addOrder(address sender, uint256 amountSelling) private {
+		IERC20(_path[0]).transferFrom(sender, address(this), amountSelling);
 		_fromAccToAmountSelling[sender] += amountSelling;	
 		_sellersStack.push(payable(sender));
 		_totalBatchAmount += amountSelling;
@@ -99,6 +100,8 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 	
 
 	function _sellAtDex(uint256 amountToSell) private {
+		// NOTE should I wait until the swap is completed to continue?
+		IERC20(_path[0]).approve(_routerAddress, amountToSell);
 		IUniswapV2Router02(_routerAddress).swapExactTokensForETH(
 			amountToSell,
 			0,
