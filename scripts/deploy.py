@@ -21,6 +21,8 @@ def deploy_batcher(acc):
         config['networks'][network.show_active()]['keyhash'],
         config['networks'][network.show_active()]['fee'],
         config['networks'][network.show_active()]['uniswap_router'],
+        RektCoin[-1].address,
+        config['networks'][network.show_active()]['weth_token'],
         {'from': acc},
         publish_source = config['networks'][network.show_active()].get('verify', False)
     )
@@ -112,10 +114,6 @@ def do_whole_rekt_swap_test():
     batcher = deploy_batcher(acc)
     
     token.setTransactionBatcher(batcher.address, {'from': acc})
-    batcher.initializePath(
-        token.address,
-        config['networks'][network.show_active()]['weth_token']
-    )
 
     approve_uniswap_router() 
     create_liq_pool()
