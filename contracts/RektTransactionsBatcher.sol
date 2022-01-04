@@ -100,7 +100,7 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 		_sellAtDex(_totalBatchAmount - amountToBurn);
 		while(_sellersStack.length > 0) {
 			address payable acc = _sellersStack[_sellersStack.length - 1];
-			delete _sellersStack[_sellersStack.length - 1];
+			_sellersStack.pop();
 			acc.transfer((address(this).balance * _fromAccToAmountSelling[acc]) / _totalBatchAmount);
 			delete _fromAccToAmountSelling[acc];
 		}

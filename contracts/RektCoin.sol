@@ -26,8 +26,8 @@ contract RektCoin is ERC20, Ownable {
 				recipient != _poolAddress,
 				"REKT: You can only sell the coin using the REKTdex router"
 			);
-			super._transfer(sender, recipient, amount);
-		}
+		} 
+		super._transfer(sender, recipient, amount);
 	}
 
 	function _sellingFromBatcher(

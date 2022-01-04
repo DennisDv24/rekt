@@ -106,7 +106,11 @@ def sell():
     amout_to_sell = amount_to_keep;
     acc = get_account()
     batcher = RektTransactionBatcher[-1]
-    batcher.sellRektCoin(amout_to_sell, {'from': acc})
+    # Only for testing purpose, notice that the sum is == amount_to_keep-10
+    batcher.sellRektCoin(Web3.toWei(23, 'ether'), {'from': acc})
+    batcher.sellRektCoin(Web3.toWei(49, 'ether'), {'from': acc})
+    batcher.sellRektCoin(Web3.toWei(18, 'ether'), {'from': acc})
+    # Ill test the remaining 10 in an new batch
 
 def do_whole_rekt_swap_test():
     acc = get_account()
@@ -125,4 +129,6 @@ def do_whole_rekt_swap_test():
 
 def main():
     do_whole_rekt_swap_test()
+    # TODO test with multiple wallets
+    # TODO organize events
 
