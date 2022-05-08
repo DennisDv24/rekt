@@ -61,6 +61,10 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 		uint256 totalBurnedAmount
 	);
 
+	event RemainingTokensBurned(
+		uint256 extraBurnedAmount
+	);
+
 	function sellRektCoin(uint256 amount) public {
 		_addOrder(msg.sender, amount);
 		if(!_saleOfBatchInProcess)
