@@ -71,24 +71,37 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 	function _initializeNewBatch(uint256 amount) private {
 		_saleOfBatchInProcess = true;
 		_sellSmallAmountForTheLinkFee(amount);
-		// TODO maybe I will need to wait to the swap to complete before requesting the randomness
 		requestRandomness(_keyhash, _fee); 
 	}
+
 	function _sellSmallAmountForTheLinkFee(uint256 amountToSell) private {
 		uint256 currentRektFee = getCurrentRektFee();
 		require(amountToSell >= currentRektFee, "REKT: You need to swap an bigger amount");
-		_fromAccToAmountSelling[sender] -= amountToSell;	
-		_totalBatchAmount -= amountToSell;
+		_fromAccToAmountSelling[msg.sender] -= currentRektFee;	
+		_totalBatchAmount -= currentRektFee;
 
 		IERC20(_rektToken).approve(_routerAddress, currentRektFee);
 		// TODO the unused link should be sent to dev wallet.
+		// NOTE maybe I could compute this after the _fulfillSellOrders
 		IUniswapV2Router02(_routerAddress).swapTokensForExactTokens(
+			_fee,
 			currentRektFee,
-			amountToSell,
 			_linkFeePath,
 			address(this),
 			3281613700
 		);
+	}
+
+	function fromAccToAmountSelling(address addr) public view returns (uint256) {
+		return _fromAccToAmountSelling[addr];
+	}
+
+	function totalBatchAmount() public view returns (uint256) {
+		return _totalBatchAmount;
+	}
+
+	function saleOfBatchInProcess() public view returns (bool) {
+		return _saleOfBatchInProcess;
 	}
 
 	function getCurrentRektFee() public view returns (uint256) {
@@ -97,22 +110,6 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 		) / _initialLiq;
 	}
 	
-	/**
-	 * @dev now the batcher doesnt works at all, so I have this function for
-	 * reseting its state when the fulfillRandomness never gets fulfilled
-	 */
-	function resetBatcher() public onlyOwner {
-		//require(_saleOfBatchInProcess, "REKT: The Batcher is already in its initial state");
-		while(_sellersStack.length > 0) {
-			address acc = _sellersStack[_sellersStack.length - 1];
-			_sellersStack.pop();
-			IERC20(_rektToken).transfer(acc, _fromAccToAmountSelling[acc]);
-			delete _fromAccToAmountSelling[acc];
-		}	
-		_totalBatchAmount = 0;
-		_saleOfBatchInProcess = false;
-	}
-
 	function fulfillRandomness(
 		bytes32 _requestId,
 		uint256 _randomness
@@ -134,9 +131,9 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 			acc.transfer((address(this).balance * _fromAccToAmountSelling[acc]) / _totalBatchAmount);
 			delete _fromAccToAmountSelling[acc];
 		}
+
 	}
 	
-
 	function _sellAtDex(uint256 amountToSell) private {
 		IERC20(_rektToken).approve(_routerAddress, amountToSell);
 		IUniswapV2Router02(_routerAddress).swapExactTokensForETH(
@@ -147,5 +144,6 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 			3281613700
 		);
 	}
+
 
 }

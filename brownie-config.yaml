@@ -18,7 +18,7 @@ networks:
     weth_token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
     vrf_coordinator: '0xdD3782915140c8f3b190B5D67eAc6dc5760C46E9'
     keyhash: '0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4'
-    fee: 1.e+17
+    fee: 1.e+18
     uniswap_router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
     uniswap_factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
 

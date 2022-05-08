@@ -40,10 +40,19 @@ def deploy_batcher(acc):
         publish_source = get_net().get('verify', False)
     )
 
-def show_batcher_info(batcher):
+def show_batcher_info(batcher=None):
+    if not batcher: batcher = RektTransactionBatcher[-1]
+    acc = get_account()
     current_fee = Web3.fromWei(batcher.getCurrentRektFee(), 'ether')
-    print(f'Current REKT fee for starting new batch: {current_fee}')
-    input()
+    batch_in_process = batcher.saleOfBatchInProcess()
+    total_batch = Web3.fromWei(batcher.totalBatchAmount(), 'ether')
+    amount_selling = Web3.fromWei(batcher.fromAccToAmountSelling(acc), 'ether')
+     
+    print('\nBATCHER INFO')
+    print(f'Current max possible REKT fee for starting a new batch: {current_fee}')
+    print(f'There is an batch in process: {batch_in_process}')
+    print(f'Total batch size: {total_batch}')
+    print(f'Amount youre selling: {amount_selling}\n')
 
 def approve_uniswap_router():
     acc = get_account()
@@ -125,8 +134,11 @@ def sell():
     batcher = RektTransactionBatcher[-1]
     # Only for testing purpose, notice that the sum is == amount_to_keep-10
     batcher.sellRektCoin(Web3.toWei(23, 'ether'), {'from': acc})
-    #batcher.sellRektCoin(Web3.toWei(49, 'ether'), {'from': acc})
-    #batcher.sellRektCoin(Web3.toWei(18, 'ether'), {'from': acc})
+    show_batcher_info()
+    batcher.sellRektCoin(Web3.toWei(49, 'ether'), {'from': acc})
+    show_batcher_info()
+    batcher.sellRektCoin(Web3.toWei(18, 'ether'), {'from': acc})
+    show_batcher_info()
     # Ill test the remaining 10 in an new batch
 
 def do_whole_rekt_swap_test():
