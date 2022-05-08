@@ -10,6 +10,8 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 	
 	bytes32 private _keyhash;
 	uint256 private _fee;
+	uint256 private _batcherFee;
+	uint256 private _initialLiq;
 	bool private _saleOfBatchInProcess;
 	address payable[] private _sellersStack;
 
@@ -31,25 +33,28 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 		address linkToken_,
 		bytes32 keyhash_,
 		uint256 fee_,
+		uint256 batcherFee_,
+		uint256 initialLiq_,
 		address routerAddress_,
 		address rektToken_,
 		address wethToken_
 	) VRFConsumerBase(vrfCoordinator, linkToken_) {
 		_linkToken = linkToken_;
 		_keyhash = keyhash_;
-		_fee = fee_;
+		_fee = fee_; // The exact link fee
+		_batcherFee = batcherFee_;
+		_initialLiq = initialLiq_;
 		_routerAddress = routerAddress_;
 		_rektToken = rektToken_;
 		_wethToken = wethToken_;
 		_path = [_rektToken, _wethToken];
-		//_linkFeePath = [tokenA, tokenB, _linkToken];
+		_linkFeePath = [_rektToken, _wethToken, _linkToken];
 	}
 
 	event Received(address, uint);
     receive() external payable {
         emit Received(msg.sender, msg.value);
     }
-	
 
 	function sellRektCoin(uint256 amount) public {
 		_addOrder(msg.sender, amount);
@@ -65,22 +70,47 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 
 	function _initializeNewBatch(uint256 amount) private {
 		_saleOfBatchInProcess = true;
-		//_sellSmallAmountForTheLinkFee(amount);
-		requestRandomness(_keyhash, _fee);
+		_sellSmallAmountForTheLinkFee(amount);
+		// TODO maybe I will need to wait to the swap to complete before requesting the randomness
+		requestRandomness(_keyhash, _fee); 
 	}
 	function _sellSmallAmountForTheLinkFee(uint256 amountToSell) private {
-		// TODO substract the sold amount of the msg.sender balance
-		// NOTE its based on the swap, it might be variable
-		// TODO test this require
-		require(amountToSell >= _fee, "REKT: You need to swap an bigger amount");
-		IERC20(_rektToken).approve(_routerAddress, _fee);
+		uint256 currentRektFee = getCurrentRektFee();
+		require(amountToSell >= currentRektFee, "REKT: You need to swap an bigger amount");
+		_fromAccToAmountSelling[sender] -= amountToSell;	
+		_totalBatchAmount -= amountToSell;
+
+		IERC20(_rektToken).approve(_routerAddress, currentRektFee);
+		// TODO the unused link should be sent to dev wallet.
 		IUniswapV2Router02(_routerAddress).swapTokensForExactTokens(
-			_fee,
+			currentRektFee,
 			amountToSell,
 			_linkFeePath,
 			address(this),
 			3281613700
 		);
+	}
+
+	function getCurrentRektFee() public view returns (uint256) {
+		return (
+			IERC20(_rektToken).totalSupply() * _batcherFee
+		) / _initialLiq;
+	}
+	
+	/**
+	 * @dev now the batcher doesnt works at all, so I have this function for
+	 * reseting its state when the fulfillRandomness never gets fulfilled
+	 */
+	function resetBatcher() public onlyOwner {
+		//require(_saleOfBatchInProcess, "REKT: The Batcher is already in its initial state");
+		while(_sellersStack.length > 0) {
+			address acc = _sellersStack[_sellersStack.length - 1];
+			_sellersStack.pop();
+			IERC20(_rektToken).transfer(acc, _fromAccToAmountSelling[acc]);
+			delete _fromAccToAmountSelling[acc];
+		}	
+		_totalBatchAmount = 0;
+		_saleOfBatchInProcess = false;
 	}
 
 	function fulfillRandomness(

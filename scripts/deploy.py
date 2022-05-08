@@ -4,28 +4,46 @@ from brownie import config, network, Contract, interface
 from web3 import Web3
 from scripts.approve_token_spending import approve
 
+net = network.show_active
+get_net = lambda: config['networks'][net()]
+get_net_conf = lambda key: config['networks'][net()][key]
+
+
 initial_supply = Web3.toWei(1000, 'ether')
 amount_to_keep = Web3.toWei(100, 'ether')
+eth_to_add_to_the_pool = Web3.toWei(0.2, 'ether')
+
+# NOTE the batcher_fee should be bigger than
+# the chainlink random number fee
+batcher_fee = Web3.toWei(0.001, 'ether')
+random_chainlink_number_fee = get_net_conf('fee')
 
 def deploy_token(acc):
     return RektCoin.deploy(
         initial_supply,
         {'from': acc},
-        publish_source = config['networks'][network.show_active()].get('verify', False)
+        publish_source = get_net().get('verify', False)
     )
 
 def deploy_batcher(acc):
     return RektTransactionBatcher.deploy(
-        config['networks'][network.show_active()]['vrf_coordinator'],
-        config['networks'][network.show_active()]['link_token'],
-        config['networks'][network.show_active()]['keyhash'],
-        config['networks'][network.show_active()]['fee'],
-        config['networks'][network.show_active()]['uniswap_router'],
+        get_net_conf('vrf_coordinator'),
+        get_net_conf('link_token'),
+        get_net_conf('keyhash'),
+        random_chainlink_number_fee,
+        batcher_fee,
+        eth_to_add_to_the_pool,
+        get_net_conf('uniswap_router'),
         RektCoin[-1].address,
-        config['networks'][network.show_active()]['weth_token'],
+        get_net_conf('weth_token'),
         {'from': acc},
-        publish_source = config['networks'][network.show_active()].get('verify', False)
+        publish_source = get_net().get('verify', False)
     )
+
+def show_batcher_info(batcher):
+    current_fee = Web3.fromWei(batcher.getCurrentRektFee(), 'ether')
+    print(f'Current REKT fee for starting new batch: {current_fee}')
+    input()
 
 def approve_uniswap_router():
     acc = get_account()
@@ -33,17 +51,16 @@ def approve_uniswap_router():
 
     token = RektCoin[-1]
     token.approve(
-        config['networks'][network.show_active()]['uniswap_router'],
+        get_net_conf('uniswap_router'),
         amount_to_approve,
         {'from': acc}
     )
 
 
-def create_liq_pool():
-    eth_to_add_to_the_pool = Web3.toWei(0.4, 'ether')
+def create_liq_pool(eth_to_add_to_the_pool):
     acc = get_account()
     router = Contract(
-        config['networks'][network.show_active()]['uniswap_router']
+        get_net_conf('uniswap_router')
     )
     deadline = 10**14
     
@@ -63,14 +80,14 @@ def fund_batcher_with_link():
     # NOTE better use interfaces
     link_token = Contract.from_abi(
         LinkToken._name,
-        config['networks'][network.show_active()]['link_token'],
+        get_net_conf('link_token'),
         LinkToken.abi
     )
 
     extra_margin = Web3.toWei(0.01, 'ether')
     link_token.transfer(
         RektTransactionBatcher[-1].address,
-        config['networks'][network.show_active()]['fee'] + extra_margin,
+        get_net_conf('fee') + extra_margin,
         {'from': acc}
     )
 
@@ -79,11 +96,11 @@ def set_token_pool():
     token = RektCoin[-1]
 
     factory = interface.IUniswapV2Factory(
-        config['networks'][network.show_active()]['uniswap_factory']
+        get_net_conf('uniswap_factory')
     )
     pool_address = factory.getPair(
         token.address,
-        config['networks'][network.show_active()]['weth_token']
+        get_net_conf('weth_token')
     )
 
     token.setPoolAddress(pool_address, {'from': acc})
@@ -108,22 +125,24 @@ def sell():
     batcher = RektTransactionBatcher[-1]
     # Only for testing purpose, notice that the sum is == amount_to_keep-10
     batcher.sellRektCoin(Web3.toWei(23, 'ether'), {'from': acc})
-    batcher.sellRektCoin(Web3.toWei(49, 'ether'), {'from': acc})
-    batcher.sellRektCoin(Web3.toWei(18, 'ether'), {'from': acc})
+    #batcher.sellRektCoin(Web3.toWei(49, 'ether'), {'from': acc})
+    #batcher.sellRektCoin(Web3.toWei(18, 'ether'), {'from': acc})
     # Ill test the remaining 10 in an new batch
 
 def do_whole_rekt_swap_test():
     acc = get_account()
     token = deploy_token(acc)
     batcher = deploy_batcher(acc)
+    show_batcher_info(batcher)
     
     token.setTransactionBatcher(batcher.address, {'from': acc})
 
     approve_uniswap_router() 
-    create_liq_pool()
-    fund_batcher_with_link()
+    create_liq_pool(eth_to_add_to_the_pool)
+    # fund_batcher_with_link() NOTE this now should work automatically
     set_token_pool()
     sell()
+    # TODO should I automatically renounce contracts ownership?
 
 
 

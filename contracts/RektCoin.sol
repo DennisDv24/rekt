@@ -15,7 +15,10 @@ contract RektCoin is ERC20, Ownable {
 		_initialSupply = initialSupply_;
 		_mint(msg.sender, initialSupply_);
 	}
-
+	/**
+	 * @dev NOTE that the function _sellingFromBather also checks
+	 * if sender is doing an normal transaction
+	 */
 	function _transfer(
 		address sender,
 		address recipient,
@@ -40,12 +43,15 @@ contract RektCoin is ERC20, Ownable {
 	function setPoolAddress(address poolAddress_) public onlyOwner {
 		_poolAddress = poolAddress_;	
 	}
+
 	function poolAddress() public returns (address) {
 		return _poolAddress;
 	}
+
 	function setTransactionBatcher(address addr) public onlyOwner {
 		_transactionBatcher = addr;
 	}
+
 	function transactionBatcher() public returns (address) {
 		return _transactionBatcher;
 	}
