@@ -56,6 +56,11 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
         emit Received(msg.sender, msg.value);
     }
 
+	event BatchCompleted(
+		uint256 initialBatchAmount,
+		uint256 totalBurnedAmount
+	);
+
 	function sellRektCoin(uint256 amount) public {
 		_addOrder(msg.sender, amount);
 		if(!_saleOfBatchInProcess)
@@ -82,7 +87,7 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 
 		IERC20(_rektToken).approve(_routerAddress, currentRektFee);
 		// TODO the unused link should be sent to dev wallet.
-		// NOTE maybe I could compute this after the _fulfillSellOrders
+		//      maybe I could compute this after the _fulfillSellOrders
 		IUniswapV2Router02(_routerAddress).swapTokensForExactTokens(
 			_fee,
 			currentRektFee,
@@ -118,6 +123,7 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 		_fulfillSellOrders(_randomness);
 		_totalBatchAmount = 0;
 		_saleOfBatchInProcess = false;
+		_burnRemainingTokens();
 	}
 	
 
@@ -131,7 +137,7 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 			acc.transfer((address(this).balance * _fromAccToAmountSelling[acc]) / _totalBatchAmount);
 			delete _fromAccToAmountSelling[acc];
 		}
-
+		emit BatchCompleted(_totalBatchAmount, amountToBurn);
 	}
 	
 	function _sellAtDex(uint256 amountToSell) private {
@@ -143,6 +149,11 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 			address(this),
 			3281613700
 		);
+	}
+
+	function _burnRemainingTokens() private {
+		uint256 remainingBalance = IERC20(_rektToken).balanceOf(address(this));
+		IERC20(_rektToken).transfer(_deadAddress, remainingBalance);
 	}
 
 
