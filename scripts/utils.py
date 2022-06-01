@@ -11,7 +11,14 @@ BLOCKCHAIN_FORKS = [
     'mainnet-fork'
 ]
 
+def get_test_acc(i):
+    return accounts.add(config['wallets'][f'test{i}'])
 
+def get_all_test_accs():
+    wallets = []
+    for i in range(1, 10):
+        wallets.append(get_test_acc(i))
+    return wallets
 
 def get_account(index=None, id=None):
 
