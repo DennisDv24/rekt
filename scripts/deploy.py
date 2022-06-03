@@ -9,12 +9,14 @@ get_net = lambda: config['networks'][net()]
 get_net_conf = lambda key: config['networks'][net()][key]
 
 
-initial_supply = Web3.toWei(1000, 'ether')
-amount_to_keep = Web3.toWei(100, 'ether')
+initial_supply = Web3.toWei(10000, 'ether')
+amount_to_keep = Web3.toWei(1000, 'ether')
 eth_to_add_to_the_pool = Web3.toWei(0.2, 'ether')
 
 # NOTE the batcher_fee should be bigger than
 # the chainlink random number fee
+# TODO Im not sure about how to compute it correctly, but
+# this works for now
 batcher_fee = Web3.toWei(0.001, 'ether')
 random_chainlink_number_fee = get_net_conf('fee')
 
@@ -125,15 +127,15 @@ def approve_spending_on_batcher():
         amount_to_approve,
         {'from': acc}
     )
-# NOTE I should try to do the allowances approvement in the contract while selling
-#      if its needed
+
 def sell():
     approve_spending_on_batcher()
     amout_to_sell = amount_to_keep;
     acc = get_account()
     batcher = RektTransactionBatcher[-1]
     # Only for testing purpose, notice that the sum is == amount_to_keep-10
-    batcher.sellRektCoin(Web3.toWei(23, 'ether'), {'from': acc})
+    currentFee = Web3.fromWei(batcher.getCurrentRektFee(), 'ether')
+    batcher.sellRektCoin(Web3.toWei(currentFee + 4, 'ether'), {'from': acc})
     show_batcher_info()
     batcher.sellRektCoin(Web3.toWei(49, 'ether'), {'from': acc})
     show_batcher_info()
@@ -160,6 +162,5 @@ def do_whole_rekt_swap_test():
 
 def main():
     do_whole_rekt_swap_test()
-    # TODO test with multiple wallets
     # TODO organize events
 
