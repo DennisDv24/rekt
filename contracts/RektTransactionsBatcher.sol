@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
+import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
+//import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract RektTransactionBatcher is VRFConsumerBase, Ownable {
+contract RektTransactionBatcher is VRFConsumerBase, Ownable, KeeperCompatibleInterface {
 	
 	bytes32 private _keyhash;
 	uint256 private _fee;
@@ -27,6 +29,9 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 
 	address[] private _path;
 	address[] private _linkFeePath;
+
+	uint256 private _lastRandom;
+	bool private _processingKeeper;
 
 	constructor(
 		address vrfCoordinator,
@@ -66,6 +71,7 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 	);
 
 	function sellRektCoin(uint256 amount) public {
+		require(!_processingKeeper, "REKT: There is an keep up. Wait for the next batch.");
 		_addOrder(msg.sender, amount);
 		if(!_saleOfBatchInProcess)
 			_initializeNewBatch(amount);
@@ -85,7 +91,7 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 
 	function _sellSmallAmountForTheLinkFee(uint256 amountToSell) private {
 		uint256 currentRektFee = getCurrentRektFee();
-		require(amountToSell >= currentRektFee, "REKT: You need to swap an bigger amount");
+		require(amountToSell >= currentRektFee, "REKT: You need to swap an bigger amount.");
 		_fromAccToAmountSelling[msg.sender] -= currentRektFee;	
 		_totalBatchAmount -= currentRektFee;
 
@@ -99,35 +105,29 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 		);
 	}
 
-	function fromAccToAmountSelling(address addr) public view returns (uint256) {
-		return _fromAccToAmountSelling[addr];
-	}
-
-	function totalBatchAmount() public view returns (uint256) {
-		return _totalBatchAmount;
-	}
-
-	function saleOfBatchInProcess() public view returns (bool) {
-		return _saleOfBatchInProcess;
-	}
-
-	function getCurrentRektFee() public view returns (uint256) {
-		return (
-			IERC20(_rektToken).totalSupply() * _batcherFee
-		) / _initialLiq;
-	}
 	
 	function fulfillRandomness(
 		bytes32 _requestId,
 		uint256 _randomness
 	) internal override {
-		require(_saleOfBatchInProcess, "REKT: Theres not any batch to calculate");
-		_fulfillSellOrders(_randomness);
-		_totalBatchAmount = 0;
-		_saleOfBatchInProcess = false;
-		_burnRemainingTokens();
+		require(_saleOfBatchInProcess, "REKT: Theres not any batch to calculate.");
+		_processingKeeper = true;
+		_lastRandom = _randomness;
 	}
 	
+	function checkUpkeep(bytes calldata) external view override returns (
+		bool upkeepNeeded, bytes memory
+	) {
+		upkeepNeeded =  _processingKeeper;
+	}
+
+	function performUpkeep(bytes calldata) external override {
+		_fulfillSellOrders(_lastRandom);
+		_totalBatchAmount = 0;
+		_burnRemainingTokens();
+		_saleOfBatchInProcess = false;
+		_processingKeeper = false;
+	}
 
 	function _fulfillSellOrders(uint256 random) private {
 		uint256 amountToBurn = random % _totalBatchAmount;
@@ -158,5 +158,30 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 		IERC20(_rektToken).transfer(_deadAddress, remainingBalance);
 	}
 
+	function fromAccToAmountSelling(address addr) public view returns (uint256) {
+		return _fromAccToAmountSelling[addr];
+	}
+
+	function totalBatchAmount() public view returns (uint256) {
+		return _totalBatchAmount;
+	}
+
+	function saleOfBatchInProcess() public view returns (bool) {
+		return _saleOfBatchInProcess;
+	}
+
+	function getCurrentRektFee() public view returns (uint256) {
+		return (
+			IERC20(_rektToken).totalSupply() * _batcherFee
+		) / _initialLiq;
+	}
+
+	function lastRandom() public view returns (uint256) {
+		return _lastRandom;
+	}
+
+	function processingKeeper() public view returns (bool) {
+		return _processingKeeper;
+	}
 
 }

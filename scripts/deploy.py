@@ -1,5 +1,5 @@
 from scripts.utils import get_account
-from brownie import RektCoin, RektTransactionBatcher, LinkToken
+from brownie import RektCoin, RektTransactionBatcher
 from brownie import config, network, Contract, interface
 from web3 import Web3
 from scripts.approve_token_spending import approve
@@ -89,12 +89,7 @@ def create_liq_pool(eth_to_add_to_the_pool):
 def fund_batcher_with_link():
     acc = get_account()
     # NOTE better use interfaces
-    link_token = Contract.from_abi(
-        LinkToken._name,
-        get_net_conf('link_token'),
-        LinkToken.abi
-    )
-
+    link_token = interface.IERC20(get_net_conf('link_token'))
     extra_margin = Web3.toWei(0.01, 'ether')
     link_token.transfer(
         RektTransactionBatcher[-1].address,
@@ -155,6 +150,8 @@ def do_whole_rekt_swap_test():
     create_liq_pool(eth_to_add_to_the_pool)
     # fund_batcher_with_link() NOTE this now should work automatically
     set_token_pool()
+    # NOTE before selling you need to suscribe the contract to the
+    # keepers network 
     #sell()
     # TODO should I automatically renounce contracts ownership?
 
