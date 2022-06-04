@@ -11,7 +11,7 @@ get_net_conf = lambda key: config['networks'][net()][key]
 
 initial_supply = Web3.toWei(10000, 'ether')
 amount_to_keep = Web3.toWei(1000, 'ether')
-eth_to_add_to_the_pool = Web3.toWei(0.2, 'ether')
+eth_to_add_to_the_pool = Web3.toWei(0.05, 'ether')
 
 # NOTE the batcher_fee should be bigger than
 # the chainlink random number fee
@@ -155,7 +155,7 @@ def do_whole_rekt_swap_test():
     create_liq_pool(eth_to_add_to_the_pool)
     # fund_batcher_with_link() NOTE this now should work automatically
     set_token_pool()
-    sell()
+    #sell()
     # TODO should I automatically renounce contracts ownership?
 
 

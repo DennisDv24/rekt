@@ -90,8 +90,6 @@ contract RektTransactionBatcher is VRFConsumerBase, Ownable {
 		_totalBatchAmount -= currentRektFee;
 
 		IERC20(_rektToken).approve(_routerAddress, currentRektFee);
-		// TODO the unused link should be sent to dev wallet.
-		//      maybe I could compute this after the _fulfillSellOrders
 		IUniswapV2Router02(_routerAddress).swapTokensForExactTokens(
 			_fee,
 			currentRektFee,

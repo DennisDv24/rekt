@@ -11,7 +11,7 @@ contract RektCoin is ERC20, Ownable {
 
 	uint256 private _initialSupply;
 
-	constructor(uint256 initialSupply_) ERC20("RektCoin", "REKT") {
+	constructor(uint256 initialSupply_) ERC20("RektCoin2", "REKT2") {
 		_initialSupply = initialSupply_;
 		_mint(msg.sender, initialSupply_);
 	}
