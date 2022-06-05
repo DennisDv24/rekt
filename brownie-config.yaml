@@ -1,11 +1,13 @@
 dependencies:
   - smartcontractkit/chainlink-brownie-contracts@0.2.2
   - OpenZeppelin/openzeppelin-contracts@4.4.1
+  - Uniswap/v2-core@1.0.1
 compiler:
   solc:
     remappings:
       - '@chainlink=smartcontractkit/chainlink-brownie-contracts@0.2.2'
       - '@openzeppelin=OpenZeppelin/openzeppelin-contracts@4.4.1'
+      - '@uniswap=Uniswap/v2-core@1.0.1'
 
 dotenv: .env
 wallets:

@@ -15,6 +15,7 @@ contract RektCoin is ERC20, Ownable {
 		_initialSupply = initialSupply_;
 		_mint(msg.sender, initialSupply_);
 	}
+
 	/**
 	 * @dev NOTE that the function _sellingFromBather also checks
 	 * if sender is doing an normal transaction

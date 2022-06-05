@@ -11,14 +11,12 @@ get_net_conf = lambda key: config['networks'][net()][key]
 
 initial_supply = Web3.toWei(10000, 'ether')
 amount_to_keep = Web3.toWei(1000, 'ether')
-eth_to_add_to_the_pool = Web3.toWei(0.2, 'ether')
+eth_to_add_to_the_pool = Web3.toWei(0.5, 'ether')
 
-# NOTE the batcher_fee should be bigger than
-# the chainlink random number fee
-# TODO Im not sure about how to compute it correctly, but
-# this works for now
-batcher_fee = Web3.toWei(0.001, 'ether')
-random_chainlink_number_fee = get_net_conf('fee')
+# NOTE it will be the minimum of native token that you must
+# sell to open an new order. For MATIC Ill just use 1MATIC
+min_batcher_fee = Web3.toWei(0.001, 'ether')
+vrf_chainlink_fee = get_net_conf('fee')
 
 def deploy_token(acc):
     return RektCoin.deploy(
@@ -27,17 +25,17 @@ def deploy_token(acc):
         publish_source = get_net().get('verify', False)
     )
 
-def deploy_batcher(acc):
+def deploy_batcher(acc, rektWethLP):
     return RektTransactionBatcher.deploy(
         get_net_conf('vrf_coordinator'),
         get_net_conf('link_token'),
         get_net_conf('keyhash'),
-        random_chainlink_number_fee,
-        batcher_fee,
-        eth_to_add_to_the_pool,
+        vrf_chainlink_fee,
         get_net_conf('uniswap_router'),
         RektCoin[-1].address,
         get_net_conf('weth_token'),
+        rektWethLP,
+        min_batcher_fee,
         {'from': acc},
         publish_source = get_net().get('verify', False)
     )
@@ -85,6 +83,9 @@ def create_liq_pool(eth_to_add_to_the_pool):
         {'from': acc, 'value': eth_to_add_to_the_pool}
     )
 
+    factory = Contract(get_net_conf('uniswap_factory'))
+    return factory.getPair(RektCoin[-1], get_net_conf('weth_token'))
+
 # NOTE this should be implemented in the contract
 def fund_batcher_with_link():
     acc = get_account()
@@ -117,10 +118,8 @@ def set_token_pool():
     token.setPoolAddress(pool_address, {'from': acc})
 
 
-def approve_spending_on_batcher():
-    acc = get_account()
-    amount_to_approve = Web3.toWei(10000, 'ether')
-
+def approve_spending_on_batcher(acc):
+    amount_to_approve = Web3.toWei(9999999, 'ether')
     token = RektCoin[-1]
     token.approve(
         RektTransactionBatcher[-1].address,
@@ -129,38 +128,40 @@ def approve_spending_on_batcher():
     )
 
 def sell():
-    approve_spending_on_batcher()
-    amout_to_sell = amount_to_keep;
     acc = get_account()
+    approve_spending_on_batcher(acc)
+
     batcher = RektTransactionBatcher[-1]
-    # Only for testing purpose, notice that the sum is == amount_to_keep-10
     currentFee = Web3.fromWei(batcher.getCurrentRektFee(), 'ether')
+
     batcher.sellRektCoin(Web3.toWei(currentFee + 4, 'ether'), {'from': acc})
     show_batcher_info()
-    batcher.sellRektCoin(Web3.toWei(49, 'ether'), {'from': acc})
-    show_batcher_info()
-    batcher.sellRektCoin(Web3.toWei(18, 'ether'), {'from': acc})
-    show_batcher_info()
-    # Ill test the remaining 10 in an new batch
 
-def do_whole_rekt_swap_test():
+    batcher.sellRektCoin(Web3.toWei(currentFee + 7, 'ether'), {'from': acc})
+    show_batcher_info()
+
+    batcher.sellRektCoin(Web3.toWei(currentFee + 12, 'ether'), {'from': acc})
+    show_batcher_info()
+
+def deploy_and_small_test():
     acc = get_account()
-    token = deploy_token(acc)
-    batcher = deploy_batcher(acc)
-    show_batcher_info(batcher)
-    
-    token.setTransactionBatcher(batcher.address, {'from': acc})
+    rekt = deploy_token(acc)
 
     approve_uniswap_router() 
-    create_liq_pool(eth_to_add_to_the_pool)
-    # fund_batcher_with_link() NOTE this now should work automatically
-    set_token_pool()
-    sell()
+    rektWethLP = create_liq_pool(eth_to_add_to_the_pool)
+    rekt.setPoolAddress(rektWethLP, {'from': acc})
+
+    batcher = deploy_batcher(acc, rektWethLP)
+    show_batcher_info(batcher)
+    
+    rekt.setTransactionBatcher(batcher.address, {'from': acc})
+
+    #sell()
     # TODO should I automatically renounce contracts ownership?
 
 
 
 def main():
-    do_whole_rekt_swap_test()
+    deploy_and_small_test()
     # TODO organize events
 
