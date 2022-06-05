@@ -29,7 +29,7 @@ networks:
     weth_token: '0xd0A1E359811322d97991E03f863a0C30C2cF029C'
     vrf_coordinator: '0xdD3782915140c8f3b190B5D67eAc6dc5760C46E9'
     keyhash: '0x6c3699283bda56ad74f6b855546325b68d482e983852a7a82979cc4807b641f4'
-    fee: 2.e+17
+    fee: 1.e+17
     uniswap_router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
     uniswap_factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
   mainnet:
@@ -50,3 +50,12 @@ networks:
     fee: 2.5e+17
     uniswap_router: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
     uniswap_factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
+  polygon-main:
+    verify: True
+    link_token: '0xb0897686c545045aFc77CF20eC7A532E3120E0F1'
+    weth_token: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270'
+    vrf_coordinator: '0x3d2341ADb2D31f1c5530cDC622016af293177AE0'
+    keyhash: '0xf86195cf7690c55907b2b611ebb7343a6f649bff128701cc542f0569e2c549da'
+    fee: 1.e+15
+    uniswap_router: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff'
+    uniswap_factory: '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32'

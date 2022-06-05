@@ -1,4 +1,5 @@
 wallets = [
     '0xA6851a21ed317a44C49C2d9aaDA18c7d0aB8F592',
+    '0x7A1Ca128f581eA57862EE463fCc7DEeA7b7De4f8',
 
 ]
