@@ -52,10 +52,25 @@ networks:
     uniswap_factory: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f'
   polygon-main:
     verify: True
-    link_token: '0xb0897686c545045aFc77CF20eC7A532E3120E0F1'
+    bridged_link: '0x53E0bca35eC356BD5ddDFebbD1Fc0fD03FaBad39'
+    wrapped_link: '0xb0897686c545045aFc77CF20eC7A532E3120E0F1'
+    pegswap: '0xAA1DC356dc4B18f30C347798FD5379F3D77ABC5b'
     weth_token: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270'
     vrf_coordinator: '0x3d2341ADb2D31f1c5530cDC622016af293177AE0'
     keyhash: '0xf86195cf7690c55907b2b611ebb7343a6f649bff128701cc542f0569e2c549da'
     fee: 1.e+15
     uniswap_router: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff'
     uniswap_factory: '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32'
+  polygon-test:
+    verify: True
+    bridged_link: '0x0000000000000000000000000000000000000000'
+    wrapped_link: '0x0000000000000000000000000000000000000000'
+    pegswap: '0x0000000000000000000000000000000000000000'
+    link_token: '0x326C977E6efc84E512bB9C30f76E30c160eD06FB'
+    weth_token: '0x9c3C9283D3e44854697Cd22D3Faa240Cfb032889'
+    vrf_coordinator: '0x8C7382F9D8f56b33781fE506E897a4F1e2d17255'
+    keyhash: '0x6e75b569a01ef56d18cab6a8e71e6600d6ce853834d4a5748b720d06f878b3a4'
+    fee: 1.e+15
+    uniswap_router: '0x8954AfA98594b838bda56FE4C12a09D7739D179b'
+    uniswap_factory: '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32'
+

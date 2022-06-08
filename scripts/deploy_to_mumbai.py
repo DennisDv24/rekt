@@ -9,9 +9,11 @@ get_net = lambda: config['networks'][net()]
 get_net_conf = lambda key: config['networks'][net()][key]
 
 
-initial_supply = Web3.toWei(10000, 'ether')
-amount_to_keep = Web3.toWei(1000, 'ether')
-eth_to_add_to_the_pool = Web3.toWei(0.5, 'ether')
+initial_supply = Web3.toWei(1_000_000_000, 'ether')
+amount_to_keep = Web3.toWei(70_000_000, 'ether')
+# In MATIC
+eth_to_add_to_the_pool = Web3.toWei(1, 'ether')
+rekt_to_add_to_the_pool = initial_supply - amount_to_keep
 
 # NOTE it will be the minimum of native token that you must
 # sell to open an new order. For MATIC Ill just use 1MATIC
@@ -22,11 +24,10 @@ def deploy_token(acc):
     return RektCoin.deploy(
         initial_supply,
         {'from': acc},
-        publish_source = get_net().get('verify', False)
+        publish_source = False #get_net().get('verify', False)
     )
 
 def deploy_batcher(acc, rektWethLP):
-    print(f'LP addr: {rektWethLP}')
     return RektTransactionBatcher.deploy(
         get_net_conf('vrf_coordinator'),
         get_net_conf('link_token'),
@@ -38,7 +39,7 @@ def deploy_batcher(acc, rektWethLP):
         rektWethLP,
         min_batcher_fee,
         {'from': acc},
-        publish_source = get_net().get('verify', False)
+        publish_source=False, #get_net().get('verify', False),
     )
 
 def show_batcher_info(batcher=None):
@@ -57,7 +58,7 @@ def show_batcher_info(batcher=None):
 
 def approve_uniswap_router():
     acc = get_account()
-    amount_to_approve = Web3.toWei(10000, 'ether')
+    amount_to_approve = Web3.toWei(initial_supply, 'ether')
 
     token = RektCoin[-1]
     token.approve(
@@ -72,19 +73,22 @@ def create_liq_pool(eth_to_add_to_the_pool):
     router = interface.IUniswapV2Router02(
         get_net_conf('uniswap_router')
     )
+
     deadline = 10**14
     
     router.addLiquidityETH(
         RektCoin[-1].address,
-        initial_supply - amount_to_keep,
-        initial_supply - amount_to_keep,
+        rekt_to_add_to_the_pool,
+        rekt_to_add_to_the_pool,
         eth_to_add_to_the_pool,
         acc,
         deadline,
         {'from': acc, 'value': eth_to_add_to_the_pool}
     )
-
-    factory = interface.IUniswapV2Factory(get_net_conf('uniswap_factory'))
+    
+    factory = interface.IUniswapV2Factory(
+        get_net_conf('uniswap_factory')
+    )
     return factory.getPair(RektCoin[-1], get_net_conf('weth_token'))
 
 # NOTE this should be implemented in the contract
@@ -115,7 +119,7 @@ def set_token_pool():
 
 
 def approve_spending_on_batcher(acc):
-    amount_to_approve = Web3.toWei(9999999, 'ether')
+    amount_to_approve = Web3.toWei(initial_supply, 'ether')
     token = RektCoin[-1]
     token.approve(
         RektTransactionBatcher[-1].address,
@@ -123,39 +127,44 @@ def approve_spending_on_batcher(acc):
         {'from': acc}
     )
 
-def sell():
+def renounce_ownership():
+    RektCoin[-1].transferOwnership(
+        '0x000000000000000000000000000000000000dEaD',
+        {'from': get_account()}
+    )
+
+def try_swap():
     acc = get_account()
-    approve_spending_on_batcher(acc)
+    #approve_spending_on_batcher(acc)
 
     batcher = RektTransactionBatcher[-1]
-    currentFee = Web3.fromWei(batcher.getCurrentRektFee(), 'ether')
+    current_fee = Web3.fromWei(batcher.getCurrentRektFee(), 'ether')
+    print(f'Current REKT fee: {current_fee}')
+    extra_amount = int(input('Extra amount to sell: '))
 
-    batcher.sellRektCoin(Web3.toWei(currentFee + 4, 'ether'), {'from': acc})
-    show_batcher_info()
-
-    batcher.sellRektCoin(Web3.toWei(currentFee + 7, 'ether'), {'from': acc})
-    show_batcher_info()
-
-    batcher.sellRektCoin(Web3.toWei(currentFee + 12, 'ether'), {'from': acc})
+    batcher.sellRektCoin(Web3.toWei(current_fee + extra_amount, 'ether'), {'from': acc})
     show_batcher_info()
 
 def deploy_and_small_test():
     acc = get_account()
     rekt = deploy_token(acc)
-
     approve_uniswap_router() 
     rektWethLP = create_liq_pool(eth_to_add_to_the_pool)
+    factory = interface.IUniswapV2Factory(
+        get_net_conf('uniswap_factory')
+    )
+    rektWethLP = factory.getPair(rekt, get_net_conf('weth_token'))
     rekt.setPoolAddress(rektWethLP, {'from': acc})
 
     batcher = deploy_batcher(acc, rektWethLP)
-    show_batcher_info()
+    show_batcher_info(batcher)
     
     rekt.setTransactionBatcher(batcher.address, {'from': acc})
+    renounce_ownership()
 
-    sell()
+    try_swap()
 
 
 def main():
     deploy_and_small_test()
-    # TODO organize events
 

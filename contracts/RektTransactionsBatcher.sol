@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBase.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IUniswapV2Pair.sol";
+import "./interfaces/IPegSwap.sol";
 
 contract RektTransactionBatcher is VRFConsumerBase {
 	
@@ -15,7 +16,10 @@ contract RektTransactionBatcher is VRFConsumerBase {
 
 	address private _routerAddress;
 	
-	address private _linkToken;
+	address private _bridgedLink;
+	address private _wrappedLink;
+	address private _pegSwap;
+
 	address private _rektToken;
 	address private _wethToken;
 	address private _rektWethLPToken; 
@@ -30,7 +34,9 @@ contract RektTransactionBatcher is VRFConsumerBase {
 
 	constructor(
 		address vrfCoordinator,
-		address linkToken_,
+		address bridgedLink_,
+		address wrappedLink_,
+		address pegSwap_,
 		bytes32 keyhash_,
 		uint256 linkFee_,
 		address routerAddress_,
@@ -38,15 +44,18 @@ contract RektTransactionBatcher is VRFConsumerBase {
 		address wethToken_,
 		address rektWethLPToken_,
 		uint256 minPrice_
-	) VRFConsumerBase(vrfCoordinator, linkToken_) {
-		_linkToken = linkToken_;
+	) VRFConsumerBase(vrfCoordinator, wrappedLink_) {
+		_bridgedLink = bridgedLink_;
+		_wrappedLink = wrappedLink_;
+		_pegSwap = pegSwap_;
 		_keyhash = keyhash_;
 		_linkFee = linkFee_;
+
 		_routerAddress = routerAddress_;
 		_rektToken = rektToken_;
 		_wethToken = wethToken_;
 		_path = [_rektToken, _wethToken];
-		_linkFeePath = [_rektToken, _wethToken, _linkToken];
+		_linkFeePath = [_rektToken, _wethToken, _bridgedLink];
 		_rektWethLPToken = rektWethLPToken_;
 		_minPrice = minPrice_;
 	}
@@ -92,6 +101,12 @@ contract RektTransactionBatcher is VRFConsumerBase {
 			_linkFeePath,
 			address(this),
 			3281613700
+		);
+		IERC20(_bridgedLink).approve(_pegSwap, _linkFee);
+		IPegSwap(_pegSwap).swap(
+			_linkFee,
+			_bridgedLink,
+			_wrappedLink
 		);
 	}
 	
